@@ -110,18 +110,27 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/belvo/access-token', widgetTokenLimiter, authenticateFirebaseUser, async (req, res) => {
   try {
-    await ensureBelvoConnection();
-    const response = await belvoClient.widgetAccessTokens.create();
+    const response = await belvoClient.widgetAccessTokens.create({
+      scopes: 'read_institutions,write_links,read_links'
+    });
+
+    const accessToken = response.access || response.access_token || response.token;
+
+    if (!accessToken) {
+      throw new Error('La respuesta de Belvo no incluyó un access_token válido.');
+    }
 
     res.json({
       success: true,
-      access_token: response.access_token
+      access_token: accessToken
     });
   } catch (error) {
-    console.error('Error al generar Widget Access Token:', error.message);
+    console.error('Error detallado al generar Widget Access Token:', error.response ? error.response.data : error);
+    
     res.status(500).json({
       success: false,
-      message: 'No se pudo generar el token del widget.'
+      message: 'No se pudo generar el token del widget.',
+      error: error.message
     });
   }
 });
