@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
 const belvo = require('belvo').default;
 
 const app = express();
@@ -45,8 +45,8 @@ const widgetTokenLimiter = rateLimit({
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+    initializeApp({
+      credential: cert(serviceAccount)
     });
     console.log('Firebase Admin SDK autenticado correctamente.');
   } catch (error) {
