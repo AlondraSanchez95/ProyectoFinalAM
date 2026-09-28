@@ -110,26 +110,61 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/belvo/access-token', widgetTokenLimiter, authenticateFirebaseUser, async (req, res) => {
   try {
-    const response = await belvoClient.widgetAccessTokens.create({
-      scopes: 'read_institutions,write_links,read_links'
-    });
+    const secretId = process.env.BELVO_SECRET_ID ? process.env.BELVO_SECRET_PASSWORD ? process.env.BELVO_SECRET_ID.trim() : '' : '';
+    const secretPassword = process.env.BELVO_SECRET_PASSWORD ? process.env.BELVO_SECRET_PASSWORD.trim() : '';
 
-    const accessToken = response.access || response.access_token || response.token;
-
-    if (!accessToken) {
-      throw new Error('La respuesta de Belvo no incluyó un access_token válido.');
+    if (!secretId || !secretPassword) {
+      console.error('ERROR CRÍTICO: Faltan BELVO_SECRET_ID o BELVO_SECRET_PASSWORD en las variables de entorno.');
+      return res.status(500).json({ success: false, message: 'Credenciales del servidor no configuradas.' });
     }
 
-    res.json({
-      success: true,
-      access_token: accessToken
+    // Credenciales en Base64 para HTTP Basic Auth
+    const credentials = Buffer.from(`${secretId}:${secretPassword}`).toString('base64');
+
+    // Determinar la URL según el entorno (sandbox o api)
+    const env = (process.env.BELVO_ENV || 'sandbox').toLowerCase();
+    const baseUrl = env === 'sandbox' ? 'https://sandbox.belvo.com' : 'https://api.belvo.com';
+
+    // Petición HTTP directa a Belvo para generar el Token del Widget
+    const response = await fetch(`${baseUrl}/api/token/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${credentials}`
+      },
+      body: JSON.stringify({
+        id: secretId,
+        password: secretPassword,
+        scopes: 'read_institutions,write_links,read_links'
+      })
     });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Respuesta de error de Belvo API:', JSON.stringify(data));
+      return res.status(response.status).json({
+        success: false,
+        message: 'Error desde la API de Belvo',
+        details: data
+      });
+    }
+
+    // Belvo devuelve { access: "...", refresh: "..." } o { access_token: "..." }
+    const token = data.access || data.access_token || data.token;
+
+    console.log('Widget Access Token generado con éxito!');
+
+    return res.json({
+      success: true,
+      access_token: token
+    });
+
   } catch (error) {
-    console.error('Error detallado al generar Widget Access Token:', error.response ? error.response.data : error);
-    
-    res.status(500).json({
+    console.error('Excepción atrapada en /access-token:', error.message);
+    return res.status(500).json({
       success: false,
-      message: 'No se pudo generar el token del widget.',
+      message: 'Error interno en el servidor.',
       error: error.message
     });
   }
