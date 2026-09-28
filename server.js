@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const belvo = require('belvo').default;
 
 const app = express();
@@ -87,7 +88,7 @@ async function authenticateFirebaseUser(req, res, next) {
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await getAuth().verifyIdToken(idToken);
     req.user = decodedToken; 
     next();
   } catch (error) {
@@ -186,7 +187,7 @@ app.post('/api/belvo/transactions', authenticateFirebaseUser, async (req, res) =
     const transactions = await belvoClient.transactions.retrieve(
       link_id,
       dateFrom || thirtyDaysAgo,
-      { dateTo: dateTo || today }
+      dateTo || today
     );
 
     const formattedTransactions = transactions.map((tx) => ({
