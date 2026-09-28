@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Maximo</string>
+    <string name="bienvenida">BIENVENIDA</string>
+    <string name="user_name">KAREN SALDIVAR</string>
+    <string name="ingresos">INGRESOS</string>
+    <string name="ahorros">AHORROS</string>
+    <string name="gastos">GASTOS</string>
+    <string name="agregar_ingreso">AGREGAR INGRESO</string>
+    <string name="agregar_ahorro">AGREGAR AHORRO</string>
+    <string name="agregar_gasto">AGREGAR GASTO</string>
+    <string name="viajes">VIAJES</string>
+    <string name="espana">ESPANA</string>
+    <string name="mexico">MEXICO</string>
+</resources>
